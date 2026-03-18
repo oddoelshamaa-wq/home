@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم محمود - الإدارة المالية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background: #020617; color: white; min-height: 100vh; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; }
+        .user-card { transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); }
+        .user-card:hover { background: rgba(255,255,255,0.1); }
+        .history-line { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 5px 0; }
+    </style>
+</head>
+<body class="p-4 flex justify-center">
+
+    <div class="w-full max-w-2xl">
+        <h1 class="text-2xl font-bold text-emerald-400 mb-8 border-b border-white/10 pb-4 italic text-center">لوحة محمود المحاسبية 👑</h1>
+
+        <!-- شريط البحث -->
+        <div class="mb-8">
+            <input type="text" id="search-input" oninput="renderAdmin()" placeholder="🔍 ابحث عن اسم الشخص..." class="w-full p-4 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-emerald-500">
+        </div>
+
+        <!-- اختيار الشهر -->
+        <div class="glass p-4 mb-8 flex justify-between items-center bg-blue-500/5">
+            <button onclick="changeMonth(-1)" class="p-2">◀</button>
+            <div class="text-center"><p class="text-[10px] opacity-40">سجلات شهر</p><h3 id="month-display" class="font-bold text-blue-300">---</h3></div>
+            <button onclick="changeMonth(1)" class="p-2">▶</button>
+        </div>
+
+        <!-- الإشعارات المعلقة -->
+        <section class="mb-12">
+            <h2 class="text-yellow-500 font-bold mb-4 text-sm">🔔 إشعارات جديدة (سلف / سداد):</h2>
+            <div id="admin-inbox" class="space-y-4"></div>
+        </section>
+
+        <!-- سجلات كل الناس -->
+        <section>
+            <h2 class="text-emerald-400 font-bold mb-4 text-sm italic">👥 سجل حسابات العملاء:</h2>
+            <div id="users-list" class="space-y-6">
+                <!-- هنا سيظهر كل مستخدم وبداخله سجله الشخصي -->
+            </div>
+        </section>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, query, where, onSnapshot, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyC-WunzZkXYOeXNAKtFgnti0suXbvU74FY",
+        authDomain: "stoer-elshamaa.firebaseapp.com",
+        projectId: "stoer-elshamaa",
+        storageBucket: "stoer-elshamaa.firebasestorage.app",
+        messagingSenderId: "566386579692",
+        appId: "1:566386579692:web:c8b293e634b5cb62c5adc9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let viewDate = new Date();
+    let allDocs = [];
+
+    window.changeMonth = (val) => { viewDate.setMonth(viewDate.getMonth() + val); renderAdmin(); };
+
+    function renderAdmin() {
+        const month_id = viewDate.getMonth() + "-" + viewDate.getFullYear();
+        document.getElementById('month-display').innerText = viewDate.toLocaleString('ar-EG', { month: 'long', year: 'numeric' });
+        
+        onSnapshot(query(collection(db, "kashkoul_v3"), where("month_id", "==", month_id)), (snap) => {
+            allDocs = []; snap.forEach(d => allDocs.push({id: d.id, ...d.data()}));
+            updateUI();
+        });
+    }
+
+    function updateUI() {
+        const search = document.getElementById('search-input').value.toLowerCase();
+        const inbox = document.getElementById('admin-inbox');
+        const usersList = document.getElementById('users-list');
+        
+        inbox.innerHTML = ''; usersList.innerHTML = '';
+        const usersData = {};
+
+        allDocs.forEach(item => {
+            // 1. فرز الإشعارات (بغض النظر عن الاسم)
+            if (item.status === 'waiting' || item.status === 'waiting_pay_confirm') {
+                const isPay = item.status === 'waiting_pay_confirm';
+                const div = document.createElement('div');
+                div.className = "glass p-4 border-r-4 border-yellow-500 flex justify-between items-center";
+                div.innerHTML = `<div><b class="text-blue-300">${item.user}</b><p class="text-xs">${isPay ? 'بيسدد مبلغ 💸' : 'طالب سلفة 💰'}</p><p class="text-xl font-bold">${item.amount} ج</p></div>
+                <div class="flex flex-col gap-2"><button onclick="respond('${item.id}', '${isPay ? 'pay' : 'loan'}')" class="bg-emerald-600 px-4 py-2 rounded-lg font-bold">موافق</button>
+                <button onclick="respond('${item.id}', 'reject')" class="bg-red-900/40 px-4 py-2 rounded-lg text-xs">رفض</button></div>`;
+                inbox.appendChild(div);
+            }
+
+            // 2. تجميع بيانات المستخدمين
+            if (item.type !== 'outside') {
+                if (!usersData[item.user]) usersData[item.user] = { loans: 0, pays: 0, history: [] };
+                if (item.status === 'approved') {
+                    if (item.type === 'loan') usersData[item.user].loans += item.amount;
+                    if (item.type === 'pay') usersData[item.user].pays += item.amount;
+                }
+                usersData[item.user].history.push(item);
+            }
+        });
+
+        // 3. عرض حسابات الناس مع البحث
+        Object.keys(usersData).forEach(name => {
+            if (name.toLowerCase().includes(search)) {
+                const data = usersData[name];
+                const net = data.loans - data.pays;
+                const div = document.createElement('div');
+                div.className = "glass p-6 user-card";
+                
+                let historyHTML = data.history.sort((a,b)=>b.date-a.date).map(h => `
+                    <div class="history-line text-[10px] flex justify-between opacity-60">
+                        <span>${h.note || (h.type=='loan'?'سلفة':'سداد')}</span>
+                        <span class="${h.type=='loan'?'text-red-300':'text-emerald-300'}">${h.type=='loan'?'+':'-'} ${h.amount}ج (${h.status})</span>
+                    </div>
+                `).join('');
+
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-emerald-400 text-lg">${name}</h3>
+                        <div class="text-left"><p class="text-[10px] opacity-50">صافي المديونية</p><b class="text-xl ${net>0?'text-red-400':'text-emerald-400'}">${net} ج</b></div>
+                    </div>
+                    <div class="mt-4 border-t border-white/5 pt-2">
+                        <p class="text-[9px] mb-2 opacity-40">تفاصيل سجل الشهر:</p>
+                        ${historyHTML}
+                    </div>
+                `;
+                usersList.appendChild(div);
+            }
+        });
+    }
+
+    window.respond = async (id, type) => {
+        if (type === 'pay') { await updateDoc(doc(db, "kashkoul_v3", id), { status: 'approved', paid: true }); }
+        else if (type === 'loan') { await updateDoc(doc(db, "kashkoul_v3", id), { status: 'approved' }); }
+        else { await updateDoc(doc(db, "kashkoul_v3", id), { status: 'rejected' }); }
+    };
+
+    renderAdmin();
+</script>
+</body>
+</html>
