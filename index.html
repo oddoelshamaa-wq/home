@@ -422,10 +422,8 @@
                     <div class="nf-bell"><i class="fas fa-bell"></i><div class="nf-badge" id="nfBadge" style="display:none">0</div></div>
                     <h3>كل التنبيهات</h3>
                 </div>
-                <div class="nf-tabs">
-                    <div class="nf-tab active" id="nfAll" onclick="setNfFilter('all')">الكل</div>
-                    <div class="nf-tab" id="nfToday" onclick="setNfFilter('today')">اليوم</div>
-                </div>
+                <div class="nf-tab" id="nfAll" onclick="setNfFilter('all')">الكل</div>
+<div class="nf-tab active" id="nfToday" onclick="setNfFilter('today')">اليوم</div>
             </div>
             <div class="nf-add">
                 <input type="text" id="nfName" placeholder="الصنف...">
@@ -517,7 +515,7 @@ firebase.initializeApp({apiKey:"AIzaSyC-WunzZkXYOeXNAKtFgnti0suXbvU74FY",authDom
 const db=firebase.database();
 let cash=0,banks=[],buys=[],txs=[],notifs=[];
 let cType='add',sPay=null,sBid=null;
-let fbOk=false,curTab='home',moOff=0,nfFilter='all';
+let fbOk=false,curTab='home',moOff=0,nfFilter='today';
 let openCardId=null,openCardType='add';
 
 /* ===== التاريخ ===== */
