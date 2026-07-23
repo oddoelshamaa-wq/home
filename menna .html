@@ -419,6 +419,8 @@
     justify-content: center;
     gap: 10px;
 }
+/* لون فودافون كاش المميز */
+.vcfodafone { background: linear-gradient(145deg, #e60000, #a50000, #4a0000) !important; color: #fff !important; }
     </style>
 </head>
 <body>
@@ -878,13 +880,21 @@ function saveData() {
     }
 
     function selBankName(name, idx) { selBank = name; document.querySelectorAll('#bankGrid .bg-i').forEach((el, i) => el.classList.toggle('sel', i === idx)); }
-
-    function createVisa() {
-        if (!selBank) { toast('اختر البنك', 'error'); return; }
-        const name = document.getElementById('newVName').value.trim() || 'بطاقة';
-        D.visas.push({ id: uid(), name: selBank, holder: name, amount: 0, ci: Math.floor(Math.random() * BCOLORS.length), ts: Date.now() });
-        saveData(); closeGModal(); toast('تم إنشاء البطاقة', 'success'); selBank = '';
-    }
+function createVisa() {
+    if (!selBank) { toast('اختر البنك أو المحفظة', 'error'); return; }
+    const name = document.getElementById('newVName').value.trim() || 'محفظة';
+    // إذا كان المختار فودافون كاش، نعطيه كلاس خاص، وإلا لون عشوائي
+    const isVodafone = selBank === 'فودافون كاش';
+    D.visas.push({ 
+        id: uid(), 
+        name: selBank, 
+        holder: name, 
+        amount: 0, 
+        ci: isVodafone ? 'vcfodafone' : BCOLORS[Math.floor(Math.random() * BCOLORS.length)], 
+        ts: Date.now() 
+    });
+    saveData(); closeGModal(); toast('تم الإضافة بنجاح', 'success'); selBank = '';
+}
 
     function renderVisas() {
         const box = document.getElementById('visaCards');
@@ -918,16 +928,35 @@ function saveData() {
     function delVisa(id) { D.visas = D.visas.filter(v => v.id !== id); saveData(); toast('تم حذف البطاقة', 'warning'); }
 
     /* ====== الشراء ====== */
-    function selPay(p) {
-        curPay = p;
-        document.getElementById('pC').className = 'pay-b' + (p === 'cash' ? ' pc' : '');
-        document.getElementById('pV').className = 'pay-b' + (p === 'visa' ? ' pv' : '');
-        document.getElementById('pVC').className = 'pay-b' + (p === 'vodafone-cash' ? ' pvc' : '');
-        const bsa = document.getElementById('bsa');
-        if (p === 'visa') { bsa.style.display = 'block'; bsa.innerHTML = D.visas.length ? '<div class="bank-grid">' + D.visas.map(v => '<div class="bg-i" onclick="selBankId(\'' + v.id + '\',this)"><div class="bgn">' + esc(v.name) + '</div><div class="bga">' + v.amount.toFixed(1) + ' ج.م</div></div>').join('') + '</div>' : '<p style="font-size:11px;color:var(--mt);text-align:center;padding:8px">مفيش بطاقات</p>'; }
-        else { bsa.style.display = 'none'; selBank = ''; }
-        checkBuy();
+function selPay(p) {
+    curPay = p;
+    document.getElementById('pC').className = 'pay-b' + (p === 'cash' ? ' pc' : '');
+    document.getElementById('pV').className = 'pay-b' + (p === 'visa' ? ' pv' : '');
+    document.getElementById('pVC').className = 'pay-b' + (p === 'vodafone-cash' ? ' pvc' : '');
+    
+    const bsa = document.getElementById('bsa');
+    bsa.style.display = 'block';
+
+    if (p === 'visa') {
+        // إظهار كروت الفيزا فقط (التي ليست فودافون كاش)
+        const cards = D.visas.filter(v => v.name !== 'فودافون كاش');
+        bsa.innerHTML = cards.length ? 
+            '<label style="display:block;font-size:10px;color:var(--mt);margin-bottom:5px">اختر البطاقة:</label><div class="bank-grid">' + 
+            cards.map(v => '<div class="bg-i" onclick="selBankId(\'' + v.id + '\',this)"><div class="bgn">' + esc(v.name) + '</div><div class="bga">' + v.amount.toFixed(1) + ' ج.م</div></div>').join('') + '</div>' 
+            : '<p style="font-size:11px;color:var(--mt);text-align:center;padding:8px">مفيش بطاقات بنكية مضافة</p>';
+    } else if (p === 'vodafone-cash') {
+        // إظهار محفظة فودافون كاش فقط
+        const wallets = D.visas.filter(v => v.name === 'فودافون كاش');
+        bsa.innerHTML = wallets.length ? 
+            '<label style="display:block;font-size:10px;color:var(--mt);margin-bottom:5px">اختر المحفظة:</label><div class="bank-grid">' + 
+            wallets.map(v => '<div class="bg-i" style="border-color:rgba(230,0,0,0.3)" onclick="selBankId(\'' + v.id + '\',this)"><div class="bgn">فودافون كاش</div><div class="bga">' + v.amount.toFixed(1) + ' ج.م</div></div>').join('') + '</div>' 
+            : '<p style="font-size:11px;color:var(--mt);text-align:center;padding:8px">لم تقم بإنشاء محفظة فودافون كاش في صفحة الفيزا</p>';
+    } else {
+        bsa.style.display = 'none';
+        selBank = '';
     }
+    checkBuy();
+}
 
     function selBankId(id, el) { selBank = id; el.parentElement.querySelectorAll('.bg-i').forEach(e => e.classList.remove('sel')); el.classList.add('sel'); checkBuy(); }
 
