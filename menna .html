@@ -421,6 +421,11 @@
 }
 /* لون فودافون كاش المميز */
 .vcfodafone { background: linear-gradient(145deg, #e60000, #a50000, #4a0000) !important; color: #fff !important; }
+/* تنسيقات إضافية للسجل المطور */
+.hist-tabs { display: flex; gap: 5px; margin-bottom: 15px; background: var(--cd); padding: 5px; border-radius: 12px; border: 1px solid var(--bd); }
+.h-tab { flex: 1; padding: 8px; text-align: center; font-size: 11px; font-weight: 700; border-radius: 8px; cursor: pointer; color: var(--mt); transition: .2s; }
+.h-tab.active { background: var(--ag); color: var(--ac); }
+.tx-source-tag { font-size: 8px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--mt); margin-right: 5px; border: 1px solid var(--bd); }
     </style>
 </head>
 <body>
@@ -523,20 +528,49 @@
         </div>
 
         <!-- السجل -->
-        <div class="pg" id="pg-hist">
-            <div class="mo-nav"><button onclick="moNav(-1)"><i class="fas fa-chevron-right"></i></button><div class="mt" id="moTitle">الشهر الحالي</div><button onclick="moNav(1)"><i class="fas fa-chevron-left"></i></button></div>
-            <div class="mo-st"><div class="ms"><div class="mv" id="msIn" style="color:var(--gn)">0</div><div class="ml">إضافات</div></div><div class="ms"><div class="mv" id="msOut" style="color:var(--rd)">0</div><div class="ml">مصروفات</div></div><div class="ms"><div class="mv" id="msNet" style="color:var(--ac)">0</div><div class="ml">الصافي</div></div></div>
-            <div id="tList" style="display:flex;flex-direction:column;gap:5px"><div class="empty"><i class="fas fa-clock-rotate-left"></i><p>مفيش عمليات</p></div></div>
+     <!-- السجل المطور -->
+<div class="pg" id="pg-hist">
+    <div class="mo-nav">
+        <button onclick="moNav(-1)"><i class="fas fa-chevron-right"></i></button>
+        <div class="mt" id="moTitle">الشهر الحالي</div>
+        <button onclick="moNav(1)"><i class="fas fa-chevron-left"></i></button>
+    </div>
+
+    <!-- كروت ملخص الشهر -->
+    <div class="mo-st">
+        <div class="ms" style="border-bottom: 3px solid var(--gn)">
+            <div class="ml">دخل إليك</div>
+            <div class="mv" id="msIn" style="color:var(--gn)">0</div>
+        </div>
+        <div class="ms" style="border-bottom: 3px solid var(--rd)">
+            <div class="ml">صرفته</div>
+            <div class="mv" id="msOut" style="color:var(--rd)">0</div>
+        </div>
+        <div class="ms" style="border-bottom: 3px solid var(--ac)">
+            <div class="ml">الصافي</div>
+            <div class="mv" id="msNet" style="color:var(--ac)">0</div>
         </div>
     </div>
 
-    <nav class="bnav" id="mainNav" style="display:none">
-        <div class="ni on" onclick="goTab('home')" data-t="home"><i class="fas fa-house"></i><span>الرئيسية</span></div>
-        <div class="ni" onclick="goTab('wallet')" data-t="wallet"><i class="fas fa-wallet"></i><span>محفظة</span></div>
-        <div class="ni" onclick="goTab('visa')" data-t="visa"><i class="fas fa-credit-card"></i><span>فيزا</span></div>
-        <div class="ni" onclick="goTab('buy')" data-t="buy"><i class="fas fa-bag-shopping"></i><span>شراء</span></div>
-        <div class="ni" onclick="goTab('debt')" data-t="debt"><i class="fas fa-hand-holding-dollar"></i><span>مديونية</span></div>
-    </nav>
+    <!-- تبويبات التصفية -->
+    <div class="hist-tabs">
+        <div class="h-tab active" id="ht-all" onclick="filterHist('all')">الكل</div>
+        <div class="h-tab" id="ht-in" onclick="filterHist('in')">الداخل (إيداع)</div>
+        <div class="h-tab" id="ht-out" onclick="filterHist('out')">الخارج (صرف)</div>
+    </div>
+
+    <div id="tList" style="display:flex;flex-direction:column;gap:5px">
+        <div class="empty"><i class="fas fa-clock-rotate-left"></i><p>مفيش عمليات في الشهر ده</p></div>
+    </div>
+</div>
+
+ <nav class="bnav" id="mainNav" style="display:none">
+    <div class="ni on" onclick="goTab('home')" data-t="home"><i class="fas fa-house"></i><span>الرئيسية</span></div>
+    <div class="ni" onclick="goTab('wallet')" data-t="wallet"><i class="fas fa-wallet"></i><span>محفظة</span></div>
+    <div class="ni" onclick="goTab('visa')" data-t="visa"><i class="fas fa-credit-card"></i><span>فيزا</span></div>
+    <div class="ni" onclick="goTab('buy')" data-t="buy"><i class="fas fa-bag-shopping"></i><span>شراء</span></div>
+    <div class="ni" onclick="goTab('hist')" data-t="hist"><i class="fas fa-clock-rotate-left"></i><span>السجل</span></div>
+</nav>
 
     <!-- مودال التقويم -->
     <div class="cal-overlay" id="calModal">
@@ -709,8 +743,13 @@ function saveData() {
     }
 
     /* ====== التنقل ====== */
-    function goTab(t) { curTab = t; document.querySelectorAll('.pg').forEach(p => p.classList.remove('on')); document.getElementById('pg-' + t).classList.add('on'); document.querySelectorAll('.ni').forEach(n => n.classList.toggle('on', n.dataset.t === t)); renderAll(); }
-
+function goTab(t) { 
+    curTab = t; 
+    document.querySelectorAll('.pg').forEach(p => p.classList.remove('on')); 
+    document.getElementById('pg-' + t).classList.add('on'); 
+    document.querySelectorAll('.ni').forEach(n => n.classList.toggle('on', n.dataset.t === t)); 
+    renderAll(); 
+}
     /* ====== التاريخ ====== */
     function navDate(dir) { viewDate.setDate(viewDate.getDate() + dir); renderDateHero(); }
 
@@ -914,16 +953,25 @@ function createVisa() {
         box.innerHTML = '<div class="inline-form"><div class="if-tabs"><div class="if-tab ib-add" style="opacity:' + (isAdd?1:.4) + '"><i class="fas fa-plus"></i> إضافة</div><div class="if-tab ib-sub" style="opacity:' + (isAdd?.4:1) + '"><i class="fas fa-minus"></i> سحب</div></div><div class="if-row"><input type="number" id="cvf-' + vid + '" placeholder="المبلغ" step="0.5"><input type="text" id="cvn-' + vid + '" placeholder="ملاحظة" style="flex:2"></div><button class="if-btn ' + (isAdd?'ib-add-btn':'ib-sub-btn') + '" onclick="doCardOp(\'' + vid + '\',\'' + type + '\')">' + (isAdd?'إضافة':'سحب') + '</button></div>';
     }
 
-    function doCardOp(vid, type) {
-        const amt = parseFloat(document.getElementById('cvf-' + vid).value) || 0;
-        const note = document.getElementById('cvn-' + vid).value.trim() || (type === 'add' ? 'إضافة فيزا' : 'سحب فيزا');
-        if (amt <= 0) { toast('اكتب مبلغ', 'error'); return; }
-        const v = D.visas.find(x => x.id === vid);
-        if (!v) return;
-        if (type === 'sub' && amt > v.amount) { toast('المبلغ أكبر من رصيد البطاقة', 'error'); return; }
-        if (type === 'add') { v.amount += amt; addTx(note + ' (' + v.name + ')', amt, 'visa', 'pos'); } else { v.amount -= amt; addTx(note + ' (' + v.name + ')', -amt, 'visa', 'neg'); }
-        saveData(); toast('تمت العملية', 'success');
+   function doCardOp(vid, type) {
+    const amt = parseFloat(document.getElementById('cvf-' + vid).value) || 0;
+    const note = document.getElementById('cvn-' + vid).value.trim() || (type === 'add' ? 'إيداع' : 'سحب');
+    const v = D.visas.find(x => x.id === vid);
+    
+    if (amt <= 0 || !v) { toast('اكتب مبلغ صحيح', 'error'); return; }
+    
+    if (type === 'sub' && amt > v.amount) { toast('الرصيد لا يسمح', 'error'); return; }
+
+    if (type === 'add') {
+        v.amount += amt;
+        addTx(note, amt, v.name, 'pos'); // يرسل اسم البنك كـ Source
+    } else {
+        v.amount -= amt;
+        addTx(note, -amt, v.name, 'neg'); // يرسل اسم البنك كـ Source
     }
+    saveData();
+    toast('تمت العملية', 'success');
+}
 
     function delVisa(id) { D.visas = D.visas.filter(v => v.id !== id); saveData(); toast('تم حذف البطاقة', 'warning'); }
 
@@ -969,16 +1017,48 @@ function selPay(p) {
 
     document.addEventListener('input', e => { if (['bN','bP','bPlace'].includes(e.target.id)) checkBuy(); });
 
-    function doBuy() {
-        const name = document.getElementById('bN').value.trim(), price = parseFloat(document.getElementById('bP').value) || 0, place = document.getElementById('bPlace').value.trim();
-        if (!name || !price) { toast('اكتب البيانات', 'error'); return; }
-        let txName = name + (place ? ' - ' + place : '');
-        addTx(txName, -price, curPay === 'cash' ? 'cash' : 'visa', 'neg');
-        if (curPay === 'visa' && selBank) { const v = D.visas.find(x => x.id === selBank); if (v) v.amount -= price; }
-        saveData(); document.getElementById('bN').value = ''; document.getElementById('bP').value = ''; document.getElementById('bPlace').value = '';
-        curPay = ''; selBank = ''; document.querySelectorAll('.pay-b').forEach(b => b.className = 'pay-b'); document.getElementById('bsa').style.display = 'none'; document.getElementById('buyB').disabled = true;
-        toast('تم الشراء', 'success');
+function doBuy() {
+    const name = document.getElementById('bN').value.trim(), 
+          price = parseFloat(document.getElementById('bP').value) || 0, 
+          place = document.getElementById('bPlace').value.trim();
+    
+    if (!name || !price) { toast('اكتب البيانات', 'error'); return; }
+
+    let finalSource = "";
+
+    // التحقق من المصدر المختار
+    if (curPay === 'cash') {
+        finalSource = 'كاش';
+    } else if (selBank) {
+        // هنا الكود بيشوف الكارت اللي انت اخترته اسمه ايه (فودافون كاش أو غيره)
+        const v = D.visas.find(x => x.id === selBank);
+        finalSource = v ? v.name : "فيزا"; 
+    } else {
+        finalSource = "غير محدد";
     }
+
+    // تسجيل العملية بالاسم الحقيقي للمصدر
+    addTx(name + (place ? ' - ' + place : ''), -price, finalSource, 'neg');
+
+    // الخصم من رصيد الكارت أو المحفظة
+    if (selBank) {
+        const v = D.visas.find(x => x.id === selBank);
+        if (v) v.amount -= price;
+    }
+
+    saveData();
+    
+    // مسح الحقول
+    document.getElementById('bN').value = ''; 
+    document.getElementById('bP').value = ''; 
+    document.getElementById('bPlace').value = '';
+    curPay = ''; selBank = ''; 
+    document.querySelectorAll('.pay-b').forEach(b => b.className = 'pay-b'); 
+    document.getElementById('bsa').style.display = 'none'; 
+    document.getElementById('buyB').disabled = true;
+    
+    toast('تم تسجيل العملية باسم: ' + finalSource, 'success');
+}
 
     function renderBuys() {
         const buys = D.txs.filter(t => t.type === 'neg' && (t.src === 'cash' || t.src === 'visa') && t.name.includes('-'));
@@ -1237,6 +1317,78 @@ async function biometricUnlock() {
             toast('فشل التحقق من البصمة', 'error');
         }
     }
+}
+// دالة تغيير التبويب في السجل
+function filterHist(f) {
+    curHistFilter = f;
+    document.querySelectorAll('.h-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('ht-' + f).classList.add('active');
+    renderHist();
+}
+
+function renderHist() {
+    const now = new Date(), target = new Date(now.getFullYear(), now.getMonth() + moOff, 1);
+    document.getElementById('moTitle').innerHTML = MNAMES[target.getMonth()] + ' <span>' + target.getFullYear() + '</span>';
+    
+    // فلترة العمليات حسب الشهر المختارة
+    let txs = D.txs.filter(t => {
+        const d = new Date(t.ts);
+        return d.getMonth() === target.getMonth() && d.getFullYear() === target.getFullYear();
+    });
+
+    // حساب الإحصائيات (الداخل والخارج) قبل التصفية بالتبويبات
+    const inc = txs.filter(t => t.amt > 0).reduce((s, t) => s + t.amt, 0);
+    const out = txs.filter(t => t.amt < 0).reduce((s, t) => s + Math.abs(t.amt), 0);
+    
+    document.getElementById('msIn').textContent = inc.toFixed(1) + ' ج.م';
+    document.getElementById('msOut').textContent = out.toFixed(1) + ' ج.م';
+    const net = inc - out;
+    document.getElementById('msNet').textContent = net.toFixed(1) + ' ج.م';
+    document.getElementById('msNet').style.color = net >= 0 ? 'var(--gn)' : 'var(--rd)';
+
+    // تطبيق التصفية حسب التبويب المختار (الكل / داخل / خارج)
+    if (curHistFilter === 'in') txs = txs.filter(t => t.amt > 0);
+    if (curHistFilter === 'out') txs = txs.filter(t => t.amt < 0);
+
+    const box = document.getElementById('tList');
+    if (!txs.length) {
+        box.innerHTML = '<div class="empty"><i class="fas fa-clock-rotate-left"></i><p>مفيش عمليات هنا</p></div>';
+        return;
+    }
+
+    box.innerHTML = txs.sort((a, b) => b.ts - a.ts).map(t => txItemHTML(t)).join('');
+}
+
+// تعديل شكل عرض العملية لإظهار المصدر (فيزا، كاش، فودافون...)
+function txItemHTML(t) {
+    let ico = 'tn', cls = 'neu', srcName = '';
+    
+    if (t.amt > 0) { ico = t.src === 'debt' ? 'tdp' : 'ti'; cls = 'pos'; }
+    else if (t.amt < 0) { ico = t.src === 'debt' ? 'td' : 'to'; cls = 'neg'; }
+
+    // المصادر الثابتة تترجم، وأي اسم بنك يظهر كما هو
+    const srcMap = { 
+        'wallet': 'المحفظة', 
+        'cash': 'كاش', 
+        'debt': 'مديونية' 
+    };
+
+    // لو المصدر فودافون كاش أو بنك مصر هيظهر زي ما هو مكتوب
+    srcName = srcMap[t.src] || t.src || 'غير محدد';
+
+    const d = new Date(t.ts), 
+          ds = d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+    
+    return `
+        <div class="tx-i">
+            <div class="tx-ic ${ico}"><i class="fas fa-${t.amt > 0 ? 'arrow-down' : 'arrow-up'}"></i></div>
+            <div class="tx-f">
+                <div class="tx-n">${esc(t.name)} <span class="tx-source-tag">${srcName}</span></div>
+                <div class="tx-d">${ds}</div>
+            </div>
+            <div class="tx-a ${cls}">${t.amt > 0 ? '+' : ''}${t.amt.toFixed(1)}</div>
+            <button class="tx-x" onclick="delTx('${t.id}')"><i class="fas fa-xmark"></i></button>
+        </div>`;
 }
     </script>
 </body>
